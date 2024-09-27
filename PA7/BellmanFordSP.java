@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Compilation:  javac BellmanFordAP.java
+ *  Compilation:  javac BellmanFordSP.java
  *  Execution:    java BellmanFordSP filename.txt s
  *  Dependencies: EdgeWeightedDigraph.java DirectedEdge.java Queue.java
  *                EdgeWeightedDirectedCycle.java
@@ -33,11 +33,19 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Stack;
 
-public class BellmanFordAP {
+public class BellmanFordSP {
     private double[] distTo;          // distTo[v] = distance  of shortest s->v path
     private DirectedEdge[] edgeTo;    // edgeTo[v] = last edge on shortest s->v path
 
-    public BellmanFordAP(EdgeWeightedGraph G, int s) {
+    /**
+     * Computes a shortest paths tree from {@code s} to every other vertex in
+     * the edge-weighted digraph {@code G}.
+     * @param G the acyclic digraph
+     * @param s the source vertex
+     * @throws IllegalArgumentException unless {@code 0 <= s < V}
+     */
+
+    public BellmanFordSP(EdgeWeightedGraph G, int s) {
         distTo = new double[G.V()];
         edgeTo = new DirectedEdge[G.V()];
         //YOUR CODE HERE
@@ -64,7 +72,7 @@ public class BellmanFordAP {
             if (distTo[w] > distTo[v] + e.weight()) {
                 System.err.println("Negative cycle detected");
                 //uncomment to throw the exception, but shortest paths will not be printed
-                // throw new UnsupportedOperationException("Negative cycle detected");
+               // throw new UnsupportedOperationException("Negative cycle detected");
             }
         });
 
@@ -78,28 +86,48 @@ public class BellmanFordAP {
             edgeTo[w] = e;
         }
     }
+    /**
+     * Is there a path from the source {@code s} to vertex {@code v}?
+     * @param  v the destination vertex
+     * @return {@code true} if there is a path from the source vertex
+     *         {@code s} to vertex {@code v}, and {@code false} otherwise
+     * @throws IllegalArgumentException unless {@code 0 <= v < V}
+     */
+    public boolean hasPathTo(int v) {
+        validateVertex(v);
+        return Double.POSITIVE_INFINITY > distTo[v];
+    }
 
+    /**
+     * Returns the length of a shortest path from the source vertex {@code s} to vertex {@code v}.
+     * @param  v the destination vertex
+     * @return the length of a shortest path from the source vertex {@code s} to vertex {@code v};
+     *         {@code Double.POSITIVE_INFINITY} if no such path
+     * @throws UnsupportedOperationException if there is a negative cost cycle reachable
+     *         from the source vertex {@code s}
+     * @throws IllegalArgumentException unless {@code 0 <= v < V}
+     */
     public double distTo(int v) {
         validateVertex(v);
         return distTo[v];
     }
-
-
-    public boolean hasPathTo(int v) {
-        validateVertex(v);
-        return distTo[v] < Double.POSITIVE_INFINITY;
-    }
-
+    /**
+     * Returns a shortest path from the source {@code s} to vertex {@code v}.
+     * @param  v the destination vertex
+     * @return a shortest path from the source {@code s} to vertex {@code v}
+     *         as an iterable of edges, and {@code null} if no such path
+     * @throws UnsupportedOperationException if there is a negative cost cycle reachable
+     *         from the source vertex {@code s}
+     * @throws IllegalArgumentException unless {@code 0 <= v < V}
+     */
     public LinkedList<DirectedEdge> pathTo(int v) {
         validateVertex(v);
+        //YOUR CODE HERE
         if (!hasPathTo(v)) return null;
         LinkedList<DirectedEdge> path = new LinkedList<DirectedEdge>();
-        boolean negativeCycleDetected = false;
         for (DirectedEdge e = edgeTo[v]; e != null; e = edgeTo[e.from()]) {
             if (path.contains(e)) {
-                if (!negativeCycleDetected) {
-                    negativeCycleDetected = true;
-                }
+                System.out.println("Negative cycle detected");
                 return null;
             }
             path.addFirst(e);
@@ -147,27 +175,26 @@ public class BellmanFordAP {
 
     private void validateVertex(int v) {
         int V = distTo.length;
-        if (v < 0 || v >= V)
+        if (v >= V || v < 0)
             throw new IllegalArgumentException("vertex " + v + " is not between 0 and " + (V - 1));
     }
 
     public static void main(String[] args) {
         In in = new In(args[0]);
         int s = Integer.parseInt(args[1]);
-        EdgeWeightedGraph G = new EdgeWeightedUndigraph(in);
-        BellmanFordSP sp = new BellmanFordSP(G, s);
+
+        EdgeWeightedGraph G2 = new EdgeWeightedDigraph(in); //directed graph initialization
+        BellmanFordSP sp = new BellmanFordSP(G2, s);
+
 
         if (!sp.hasPathTo(s)) {
             System.out.println("No path found");
         } else {
-            for (int v = 0; v < G.V(); v++) {
+            for (int v = 0; v < G2.V(); v++) {
                 if (sp.hasPathTo(v)) {
                     System.out.printf("%d to %d (%5.2f)  ", s, v, sp.distTo(v));
                     if (v != s) {
-                        LinkedList<DirectedEdge> path = new LinkedList<>(sp.pathTo(v));
-                        Iterator<DirectedEdge> it = path.descendingIterator();
-                        while (it.hasNext()) {
-                            DirectedEdge e = it.next();
+                        for (DirectedEdge e : sp.pathTo(v)) {
                             System.out.printf("%d->%d %5.2f   ", e.from(), e.to(), e.weight());
                         }
                     }
